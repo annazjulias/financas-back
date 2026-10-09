@@ -1,3 +1,4 @@
+
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { firebaseAdminAuth } from "../config/firebaseAdmin.js";
 import { findOrCreateUser } from "../services/userService.js";
@@ -29,7 +30,7 @@ export async function authenticate(
       });
     }
 
-    const token = authorization.substring(7);
+    const token = authorization.substring(7).trim();
 
     if (!token) {
       return reply.status(401).send({
@@ -38,19 +39,13 @@ export async function authenticate(
       });
     }
 
-    const decodedToken = await firebaseAdminAuth().verifyIdToken(token);
+    const decodedToken =
+      await firebaseAdminAuth().verifyIdToken(token);
 
-    if (!decodedToken.uid) {
+    if (!decodedToken.uid || !decodedToken.email) {
       return reply.status(401).send({
         error: "Unauthorized",
-        message: "Usuário não identificado.",
-      });
-    }
-
-    if (!decodedToken.email) {
-      return reply.status(401).send({
-        error: "Unauthorized",
-        message: "Usuário não possui e-mail.",
+        message: "Token sem UID ou e-mail válido.",
       });
     }
 
@@ -60,12 +55,20 @@ export async function authenticate(
     );
 
     request.userId = user.id;
-  } catch (error) {
-    console.error("ERRO REAL DO FIREBASE ADMIN:");
-    console.error(error);
-  
-    request.log.error(error);
-  
+  } catch (error: unknown) {
+    const err = error as {
+      code?: string;
+      message?: string;
+    };
+
+    request.log.error(
+      {
+        code: err.code,
+        message: err.message,
+      },
+      "Falha na autenticação Firebase"
+    );
+
     return reply.status(401).send({
       error: "Unauthorized",
       message: "Token de autenticação inválido ou expirado.",
