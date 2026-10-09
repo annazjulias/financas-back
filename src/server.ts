@@ -18,7 +18,8 @@ inicializeFirebase();
 
 
 await server.register(cors, {
-  origin: "http://localhost:5173",
+  origin: ["http://localhost:5173",
+  "financas-front-l8lpob7vl-annazjulias-projects.vercel.app",],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 });
